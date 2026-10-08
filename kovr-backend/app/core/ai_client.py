@@ -16,10 +16,21 @@ load_dotenv(override=True)
 # logic below must catch either kind.
 RATE_LIMIT_ERRORS = (GroqRateLimitError, OpenAIRateLimitError)
 
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-openrouter_client = OpenAI(
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    base_url="https://openrouter.ai/api/v1",
+# Clients are built only when their key exists, so importing the app on a
+# fresh machine (CI runner, new clone) never crashes — the chain simply
+# contains whichever providers are configured.
+groq_client = (
+    Groq(api_key=os.getenv("GROQ_API_KEY"))
+    if os.getenv("GROQ_API_KEY")
+    else None
+)
+openrouter_client = (
+    OpenAI(
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        base_url="https://openrouter.ai/api/v1",
+    )
+    if os.getenv("OPENROUTER_API_KEY")
+    else None
 )
 
 # Gemini through Google's OpenAI-compatible endpoint — the same SDK is
@@ -40,11 +51,16 @@ gemini_client = (
 # OpenRouter, Gemini 2.x Flash, and finally Z.ai GLM — each a genuinely
 # different provider/infrastructure, so the chain keeps working even when
 # the pools above it are exhausted.
-PROVIDER_CHAIN = [
-    (groq_client, os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"), "groq"),
-    (groq_client, os.getenv("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b"), "groq"),
-    (openrouter_client, os.getenv("OPENROUTER_MODEL", "openrouter/free"), "openrouter"),
-]
+PROVIDER_CHAIN = []
+if groq_client:
+    PROVIDER_CHAIN.append((groq_client, os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"), "groq"))
+    PROVIDER_CHAIN.append(
+        (groq_client, os.getenv("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b"), "groq")
+    )
+if openrouter_client:
+    PROVIDER_CHAIN.append(
+        (openrouter_client, os.getenv("OPENROUTER_MODEL", "openrouter/free"), "openrouter")
+    )
 if gemini_client:
     PROVIDER_CHAIN.append(
         (gemini_client, os.getenv("GEMINI_MODEL", "gemini-2.5-flash"), "gemini")
@@ -221,6 +237,12 @@ def chat_with_retry(messages: list, max_tokens: int, temperature: float):
     messages = safe_messages
 
     last_error = None
+
+    if not get_provider_chain():
+        raise RuntimeError(
+            "No AI provider configured — set at least one of "
+            "GROQ_API_KEY, OPENROUTER_API_KEY or GEMINI_API_KEY."
+        )
 
     # Cancel/pause react at every AI-call boundary — the only genuinely
     # slow step in a scan, so this is where user control must land.

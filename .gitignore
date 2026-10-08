@@ -1,0 +1,37 @@
+# Root .gitignore for the KOVR monorepo (backend + frontend)
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Backend (kovr-backend/)
+.venv/
+__pycache__/
+*.py[oc]
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+kovr-backend/test_report.json
+kovr-backend/gitleaks_report.json
+kovr-backend/cache_data/
+kovr-backend/cloned_repos/
+
+# Frontend (kovr-frontend_new/)
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+.vite/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local agent session data and archive backups — not part of the project
+.kilo/
+*.zip

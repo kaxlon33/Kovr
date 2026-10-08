@@ -1,0 +1,173 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+/* ─────────────────────────────────────────────────────────────
+   Obsidian — High-Contrast Dark
+   "Precision in Darkness". Near-black surfaces, high-contrast
+   text, precise accents. Borders over shadows. Accent colors
+   for function, never decoration.
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  /* Surfaces — zinc scale, very subtle increments */
+  --color-background: #09090b;
+  --color-surface-container-lowest: #09090b;
+  --color-surface: #0c0c0f;
+  --color-surface-dim: #0c0c0f;
+  --color-surface-container-low: #0f0f12;
+  --color-surface-container: #121215;
+  --color-surface-variant: #18181b;
+  --color-surface-container-high: #18181b;
+  --color-surface-bright: #18181b;
+  --color-surface-container-highest: #1e1e22;
+
+  /* Lines */
+  --color-outline-variant: #27272a;
+  --color-outline: #52525b;
+
+  /* Text */
+  --color-on-background: #fafafa;
+  --color-on-surface: #fafafa;
+  --color-on-surface-variant: #a1a1aa;
+
+  /* Primary — vivid cyan */
+  --color-primary: #22d3ee;
+  --color-on-primary: #05242c;
+  --color-primary-container: #0e7490;
+  --color-on-primary-container: #cffafe;
+  --color-primary-dim: #67e8f9;
+  --color-primary-deep: #155e75;
+
+  /* Secondary — zinc */
+  --color-secondary: #71717a;
+  --color-on-secondary: #09090b;
+  --color-secondary-container: #27272a;
+  --color-on-secondary-container: #a1a1aa;
+  --color-secondary-dim: #71717a;
+
+  /* Tertiary — emerald, success + code highlights */
+  --color-tertiary: #34d399;
+  --color-on-tertiary: #001a12;
+  --color-tertiary-container: #065f46;
+  --color-on-tertiary-container: #bbf7d0;
+  --color-tertiary-dim: #6ee7b7;
+
+  /* Error — red, errors only */
+  --color-error: #ef4444;
+  --color-on-error: #1a0000;
+  --color-error-container: #3b1111;
+  --color-on-error-container: #fca5a5;
+
+  /* Severity ramp */
+  --color-sev-critical: #ef4444;
+  --color-sev-high: #f97316;
+  --color-sev-medium: #eab308;
+  --color-sev-low: #71717a;
+  --color-sev-info: #38bdf8;
+
+  /* Type */
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Radii — flat and precise */
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* Motion */
+  --animate-scan-sweep: scan-sweep 2.4s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 2.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-fade-up: fade-up 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-slide-in: slide-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-blink: blink 1.1s step-end infinite;
+}
+
+@keyframes scan-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 0.15; transform: scale(1.12); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@layer base {
+  * { border-color: var(--color-outline-variant); }
+
+  html {
+    background-color: var(--color-background);
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-on-background);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 { letter-spacing: -0.02em; }
+
+  /* Focus rings: 2px cyan with 2px offset (DESIGN.md) */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--color-surface); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-outline-variant);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-outline); }
+}
+
+@layer utilities {
+  /* Faint dotted grid used on empty canvases */
+  .bg-dot-grid {
+    background-image: radial-gradient(circle at center, var(--color-primary) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .text-balance { text-wrap: balance; }
+
+  /* Density mode — driven by the Settings page */
+  :root[data-density="compact"] .density-row { padding-block: 0.5rem; }
+  :root[data-density="comfortable"] .density-row { padding-block: 1rem; }
+}
+
+/* Respect the user's motion preference everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}

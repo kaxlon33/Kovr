@@ -1,0 +1,52 @@
+# render.yaml — Infrastructure as Code for Render (Blueprint)
+# Lives at the monorepo root: Render reads it from the default branch
+# root, so build paths point INTO the backend directory.
+services:
+  - type: web
+    name: kovr-backend
+    runtime: docker
+    dockerfilePath: ./kovr-backend/Dockerfile
+    dockerContext: ./kovr-backend
+    region: oregon
+    plan: free
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false  # Must be set manually — NEVER commit secrets
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_FALLBACK_MODEL
+        value: openai/gpt-oss-20b
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: openrouter/free
+      - key: GEMINI_API_KEY
+        sync: false  # 4th fallback tier — from https://aistudio.google.com/apikey
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GITHUB_TOKEN
+        sync: false  # Optional self-hosted fallback — per-user OAuth is the primary flow
+      - key: GITHUB_CLIENT_ID
+        sync: false  # OAuth App client id — enables per-user "Connect GitHub"
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: APP_FRONTEND_URL
+        value: https://YOUR-CLOUDFLARE-DOMAIN.pages.dev  # where users land after connecting
+      - key: LANGCHAIN_API_KEY
+        sync: false
+      - key: LANGCHAIN_TRACING_V2
+        value: "true"
+      - key: LANGCHAIN_PROJECT
+        value: kovr
+      - key: DATABASE_URL
+        sync: false  # Set to your Render managed Postgres connection string
+      - key: JWT_SECRET
+        sync: false  # 64-char random hex: python -c "import secrets; print(secrets.token_hex(32))"
+      - key: COOKIE_SECURE
+        value: "true"  # HTTPS in production — the auth cookie must never ride plain HTTP
+      - key: CORS_ORIGINS
+        sync: false  # Your Cloudflare Pages domain, e.g. https://kovr.pages.dev (comma-separated for extras)
+      - key: HF_TOKEN
+        sync: false  # Optional — faster embedding-model downloads on cold starts
+    healthCheckPath: /api/health
+    autoDeploy: true

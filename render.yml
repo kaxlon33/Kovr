@@ -1,6 +1,16 @@
 # render.yaml — Infrastructure as Code for Render (Blueprint)
 # Lives at the monorepo root: Render reads it from the default branch
 # root, so build paths point INTO the backend directory.
+#
+# Deploy: render.com → New → Blueprint → pick this repo → fill the
+# sync:false secrets when prompted. The Postgres below is provisioned
+# automatically and wired into DATABASE_URL.
+databases:
+  - name: kovr-db
+    databaseName: kovr
+    user: kovr
+    plan: free # expires after 30 days on Render's free tier — upgrade to keep data
+
 services:
   - type: web
     name: kovr-backend
@@ -10,6 +20,10 @@ services:
     region: oregon
     plan: free
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kovr-db
+          property: connectionString
       - key: GROQ_API_KEY
         sync: false  # Must be set manually — NEVER commit secrets
       - key: GROQ_MODEL
@@ -38,8 +52,6 @@ services:
         value: "true"
       - key: LANGCHAIN_PROJECT
         value: kovr
-      - key: DATABASE_URL
-        sync: false  # Set to your Render managed Postgres connection string
       - key: JWT_SECRET
         sync: false  # 64-char random hex: python -c "import secrets; print(secrets.token_hex(32))"
       - key: COOKIE_SECURE

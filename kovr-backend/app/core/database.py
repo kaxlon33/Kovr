@@ -101,6 +101,14 @@ def _migrate_columns():
 
 
 def init_db():
+    # Managed Postgres (e.g. Render) ships without extensions — the vector
+    # column below requires pgvector to exist before create_all runs.
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.commit()
+    except Exception as e:
+        print(f"[db] could not create pgvector extension (may already exist): {e}")
     Base.metadata.create_all(bind=engine)
     _migrate_columns()
 

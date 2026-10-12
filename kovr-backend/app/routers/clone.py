@@ -197,14 +197,18 @@ def clone_repo(request: CloneRequest, current_user: User = Depends(get_current_u
 
     # Shallow clone (depth=1) — much faster/smaller than a full clone
     # regardless of the repo's history, and lets us check before
-    # committing to a full scan. Public repos clone anonymously; a 401
-    # means the repo is private — retry with the user's own connected
-    # GitHub token so private repositories scan too.
+    # committing to a full scan. Public repos clone anonymously; an auth
+    # failure means the repo is private (or inaccessible) — retry with
+    # the user's own connected GitHub token so private repositories scan.
+    _AUTH_FAILURE_MARKERS = (
+        "401", "403", "Authentication failed", "could not read Username",
+        "terminal prompts disabled", "Repository not found",
+    )
     try:
         git.Repo.clone_from(request.repo_url, target_path, depth=1)
     except git.GitCommandError as clone_err:
         message = str(clone_err)
-        if "401" not in message and "Authentication failed" not in message:
+        if not any(marker in message for marker in _AUTH_FAILURE_MARKERS):
             raise
         from app.routers.github_auth import user_github_token
 
@@ -212,8 +216,8 @@ def clone_repo(request: CloneRequest, current_user: User = Depends(get_current_u
         if not token:
             return {
                 "error": (
-                    "This repository is private. Connect your GitHub account in Settings "
-                    "to scan repositories you have access to."
+                    "This repository is private (or not accessible). Connect your GitHub "
+                    "account in Settings to scan repositories you have access to."
                 ),
                 "status": "rejected",
             }
@@ -225,6 +229,15 @@ def clone_repo(request: CloneRequest, current_user: User = Depends(get_current_u
             # The token must not persist inside the working copy's config
             # (it would leak into archives/bundles derived from it).
             repo.remote("origin").set_url(request.repo_url)
+        except git.GitCommandError as authed_err:
+            rmtree_git_safe(target_path)
+            return {
+                "error": (
+                    "Your GitHub account cannot access this repository "
+                    f"({str(authed_err).splitlines()[-1][:120] if str(authed_err) else 'access denied'})."
+                ),
+                "status": "rejected",
+            }
         finally:
             del authed_url
 

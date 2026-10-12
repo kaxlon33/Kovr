@@ -5,6 +5,11 @@ FROM python:3.14-slim
 
 WORKDIR /app
 
+# Never prompt for git credentials interactively — in a container there is
+# no terminal, and a deterministic auth failure is what the private-repo
+# fallback detects.
+ENV GIT_TERMINAL_PROMPT=0
+
 # System dependencies: git (repo cloning), curl (gitleaks download)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \

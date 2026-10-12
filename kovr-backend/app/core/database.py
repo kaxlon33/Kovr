@@ -9,6 +9,13 @@ import os
 import shutil
 import tempfile
 
+from dotenv import load_dotenv
+
+# .env must be loaded BEFORE the connection string is read — this module is
+# imported first in the chain, so doing it here (not only in ai_client)
+# makes DATABASE_URL in .env actually take effect.
+load_dotenv(override=True)
+
 from app.core.ai_client import investigate_finding, check_finding_resolved, has_real_patch
 from app.core.syntax_check import check_syntax
 from app.core.embeddings import generate_embedding

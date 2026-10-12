@@ -45,5 +45,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/health || exit 1
 
-# Run uvicorn directly from venv (avoids uv re-syncing at runtime)
-CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run uvicorn directly from venv (avoids uv re-syncing at runtime).
+# $PORT is injected by hosts that assign dynamic ports; defaults to 8000.
+CMD ["sh", "-c", ".venv/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

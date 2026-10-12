@@ -106,7 +106,7 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         # wherever the same-site guarantee exists.
         samesite="none" if secure else "lax",
         secure=secure,
-        max_age=7 * 24 * 60 * 60,  # 7 days, matches token expiry
+        max_age=30 * 24 * 60 * 60,  # 30 days, matches token expiry
         path="/",
     )
 

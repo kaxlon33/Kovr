@@ -66,7 +66,12 @@ def init_scan_progress(scan_id: str, user_id: str = None):
             "api_design": {"status": "pending"},
             "backend_logic": {"status": "pending"},
             "ui_ux": {"status": "pending"},
-            "complete": False
+            "complete": False,
+            # Server-side clock: the UI's elapsed timer derives from this,
+            # so navigating away and back shows the TRUE scan age instead
+            # of restarting at zero.
+            "started_at": time.time(),
+            "paused_total": 0.0,
         }
         if user_id:
             _owner_store[scan_id] = user_id
@@ -131,10 +136,20 @@ def is_scan_cancelled(scan_id: str) -> bool:
 
 def set_scan_paused(scan_id: str, paused: bool):
     with _lock:
+        entry = _progress_store.get(scan_id)
+        if isinstance(entry, dict):
+            now = time.time()
+            if paused:
+                entry["pause_started_at"] = now
+            else:
+                started = entry.pop("pause_started_at", None)
+                if started is not None:
+                    entry["paused_total"] = entry.get("paused_total", 0.0) + (now - started)
         if paused:
             _pause_flags.add(scan_id)
         else:
             _pause_flags.discard(scan_id)
+        _persist_locked()
 
 
 def is_scan_paused(scan_id: str) -> bool:
@@ -159,6 +174,15 @@ def get_scan_progress(scan_id: str):
         data = dict(progress)
         data["paused"] = scan_id in _pause_flags
         data["cancelled"] = scan_id in _cancel_requests
+        # True scan age from the server clock, minus paused time — the
+        # single source of truth for the UI's elapsed timer.
+        if isinstance(progress, dict) and progress.get("started_at") and not progress.get("complete"):
+            paused_for = progress.get("paused_total", 0.0)
+            if "pause_started_at" in progress:
+                paused_for += time.time() - progress["pause_started_at"]
+            data["elapsed_seconds"] = max(
+                0, int(time.time() - progress["started_at"] - paused_for)
+            )
         return data
 
 

@@ -216,8 +216,14 @@ export function ScanProgress() {
   // appear here, chosen or not.
   const activeKeys = PILLAR_KEYS.filter((key) => selectedPillars.includes(key))
 
-  /* Live elapsed timer — frozen while paused and once the run completes. */
+  /* Elapsed timer — anchored to the SERVER clock (progress.elapsed_seconds)
+  so navigating away and back keeps the true scan age. Local ticks only
+  smooth the seconds between server frames; paused and complete freeze it. */
   const [elapsed, setElapsed] = useState(0)
+  const serverElapsed = Math.floor(view.elapsed_seconds ?? 0)
+  useEffect(() => {
+    setElapsed(serverElapsed)
+  }, [serverElapsed])
   useEffect(() => {
     if (complete || scanPaused) return
     const timer = setInterval(() => setElapsed((seconds) => seconds + 1), 1000)

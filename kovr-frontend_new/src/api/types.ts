@@ -21,6 +21,9 @@ export type ProgressState = {
   paused?: boolean
   /** Set when the user cancelled the scan. */
   cancelled?: boolean
+  /** True scan age from the server clock (minus paused time) — the UI
+   * timer syncs to this so navigating away never resets it. */
+  elapsed_seconds?: number
   /** Stream-level failure, e.g. the backend restarted mid-scan. */
   error?: string
 }

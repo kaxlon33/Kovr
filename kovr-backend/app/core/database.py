@@ -1,7 +1,7 @@
 import logging
 import hashlib
 logger = logging.getLogger("kovr")
-from sqlalchemy import create_engine, Column, String, Integer, Text, ForeignKey, DateTime, func
+from sqlalchemy import create_engine, Column, String, Integer, Text, ForeignKey, DateTime, func, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from pgvector.sqlalchemy import Vector
 import uuid as uuid_lib

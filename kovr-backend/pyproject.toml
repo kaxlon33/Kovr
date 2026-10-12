@@ -22,6 +22,7 @@ dependencies = [
     "sentence-transformers>=5.7.0",
     "sqlalchemy>=2.0.52",
     "sse-starlette>=3.4.8",
+    "torch>=2.13.0",
     "uvicorn[standard]>=0.52.1",
 ]
 
@@ -29,3 +30,14 @@ dependencies = [
 dev = [
     "pytest>=9.1.1",
 ]
+
+[tool.uv]
+# CPU-only torch: the default PyPI wheel drags ~2.5GB of NVIDIA CUDA
+# libraries into the image that a CPU deployment never uses.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }

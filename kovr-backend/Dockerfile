@@ -1,4 +1,7 @@
-FROM python:3.12-slim
+# Must match the project's requires-python (>=3.14) and the interpreter
+# the lockfile was resolved with — a mismatch makes uv download a newer
+# Python whose wheels don't exist for pinned packages like torch.
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -29,8 +32,9 @@ COPY --chown=appuser:appuser uv.lock* .
 # Switch to non-root user before installing deps (so .venv is owned by appuser)
 USER appuser
 
-# Install dependencies (production only)
-RUN uv sync --frozen --no-dev
+# Install dependencies (production only). Pin uv to the container's own
+# interpreter so it uses it instead of downloading the newest Python.
+RUN uv sync --frozen --no-dev --python /usr/local/bin/python3
 
 # Copy application code (single app/ package)
 COPY --chown=appuser:appuser app/ app/

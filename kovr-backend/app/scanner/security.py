@@ -32,6 +32,13 @@ def run_gitleaks(repo_path: str):
     return findings
 
 def run_semgrep(repo_path: str):
+    # SEMGREP_ENABLED=off skips the semgrep pass on RAM-constrained
+    # deployments (its subprocess peaks at several hundred MB alongside
+    # the API). Gitleaks secret scanning remains active either way.
+    if os.getenv("SEMGREP_ENABLED", "on").strip().lower() in ("0", "false", "off", "no"):
+        print("[security] SEMGREP_ENABLED=off — skipping semgrep pass (gitleaks still active)")
+        return []
+
     if platform.system() == "Windows":
         # Local Windows dev only — Semgrep's native binary doesn't run on
         # Windows, so shell out through WSL. In Docker (Linux), this

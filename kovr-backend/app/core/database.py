@@ -29,7 +29,13 @@ from app.core.code_reader import get_code_context, get_function_context, locate_
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://kovr_user:kovr_pass@localhost:5432/kovr")
 
-engine = create_engine(DATABASE_URL)
+# search_path includes Supabase's `extensions` schema, where its pgvector
+# type actually lives — without it, CREATE TABLE fails with
+# 'type "vector" does not exist' even though the extension is installed.
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"options": "-csearch_path=public,extensions"},
+)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 

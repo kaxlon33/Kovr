@@ -100,7 +100,11 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         key=COOKIE_NAME,
         value=token,
         httponly=True,
-        samesite="lax",  # cookies never ride cross-site POSTs (CSRF)
+        # Deployed frontend (pages.dev) and backend (onrender.com) are
+        # DIFFERENT sites: only SameSite=None cookies ride cross-site
+        # requests. Localhost keeps Lax — stronger CSRF protection
+        # wherever the same-site guarantee exists.
+        samesite="none" if secure else "lax",
         secure=secure,
         max_age=7 * 24 * 60 * 60,  # 7 days, matches token expiry
         path="/",

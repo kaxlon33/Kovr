@@ -97,18 +97,32 @@ class Finding(Base):
 def _migrate_columns():
     """create_all never alters existing tables — any column a model gained
     after a database was first created would be missing and crash queries
-    with a 500. Postgres' ADD COLUMN IF NOT EXISTS lets us reconcile the
-    models against an older schema cheaply and idempotently."""
+    with a 500. The actual schema is inspected first and only genuinely
+    missing columns are added: a healthy database runs ZERO DDL at boot
+    (every ALTER takes a table lock, and a stray lock once stalled startup
+    past the statement timeout)."""
     from sqlalchemy import text
 
     with engine.begin() as conn:
         for table in Base.metadata.sorted_tables:
+            existing = {
+                row[0]
+                for row in conn.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_schema = CURRENT_SCHEMA() AND table_name = :t"
+                    ),
+                    {"t": table.name},
+                )
+            }
             for column in table.columns:
-                type_ddl = column.type.compile(engine.dialect)
+                if column.name in existing:
+                    continue
+                print(f"[db] reconciling schema: adding {table.name}.{column.name}")
                 conn.execute(
                     text(
                         f'ALTER TABLE "{table.name}" '
-                        f'ADD COLUMN IF NOT EXISTS "{column.name}" {type_ddl}'
+                        f'ADD COLUMN "{column.name}" {column.type.compile(engine.dialect)}'
                     )
                 )
 

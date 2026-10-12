@@ -197,8 +197,36 @@ def clone_repo(request: CloneRequest, current_user: User = Depends(get_current_u
 
     # Shallow clone (depth=1) — much faster/smaller than a full clone
     # regardless of the repo's history, and lets us check before
-    # committing to a full scan.
-    git.Repo.clone_from(request.repo_url, target_path, depth=1)
+    # committing to a full scan. Public repos clone anonymously; a 401
+    # means the repo is private — retry with the user's own connected
+    # GitHub token so private repositories scan too.
+    try:
+        git.Repo.clone_from(request.repo_url, target_path, depth=1)
+    except git.GitCommandError as clone_err:
+        message = str(clone_err)
+        if "401" not in message and "Authentication failed" not in message:
+            raise
+        from app.routers.github_auth import user_github_token
+
+        token = user_github_token(current_user)
+        if not token:
+            return {
+                "error": (
+                    "This repository is private. Connect your GitHub account in Settings "
+                    "to scan repositories you have access to."
+                ),
+                "status": "rejected",
+            }
+        authed_url = request.repo_url.replace(
+            "https://", f"https://x-access-token:{token}@", 1
+        )
+        try:
+            repo = git.Repo.clone_from(authed_url, target_path, depth=1)
+            # The token must not persist inside the working copy's config
+            # (it would leak into archives/bundles derived from it).
+            repo.remote("origin").set_url(request.repo_url)
+        finally:
+            del authed_url
 
     size_mb = _get_folder_size_mb(target_path)
     if size_mb > MAX_REPO_SIZE_MB:

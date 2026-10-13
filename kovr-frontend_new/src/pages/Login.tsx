@@ -134,26 +134,32 @@ export function Login() {
           </span>
         </label>
 
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-on-surface-variant">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(event) => setRemember(event.target.checked)}
-            className="h-4 w-4 accent-primary"
-          />
-          Remember me — keep my email and password filled in
-        </label>
+        <div className="flex items-center justify-between">
+          {!remembered ? (
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-on-surface-variant">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(event) => setRemember(event.target.checked)}
+                className="h-4 w-4 accent-primary"
+              />
+              Remember me
+            </label>
+          ) : (
+            <span />
+          )}
+          <Link
+            to="/forgot"
+            className="text-sm font-medium text-primary transition-colors hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
 
         <Button type="submit" variant="primary" size="lg" block disabled={loading} icon={<LogIn size={16} />}>
           {loading ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
-
-      <div className="flex items-center justify-between text-sm">
-        <Link to="/forgot" className="font-medium text-primary transition-colors hover:underline">
-          Forgot password?
-        </Link>
-      </div>
 
       <p className="mt-5 text-center text-sm text-on-surface-variant">
         No account yet?{' '}

@@ -96,17 +96,35 @@ export function Forgot() {
             Continue to reset password
           </Button>
           <p className="text-center text-xs text-on-surface-variant">
-            Nothing arrived? Check spam, or{' '}
-            <button
-              type="button"
-              onClick={() => {
-                setSent(false)
-                setTempPassword('')
-              }}
-              className="font-medium text-primary hover:underline"
-            >
-              try again
-            </button>
+            {tempPassword ? (
+              <>
+                Wrong email address?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSent(false)
+                    setTempPassword('')
+                  }}
+                  className="font-medium text-primary hover:underline"
+                >
+                  Start over
+                </button>
+              </>
+            ) : (
+              <>
+                Nothing arrived? Check spam, or{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSent(false)
+                    setTempPassword('')
+                  }}
+                  className="font-medium text-primary hover:underline"
+                >
+                  try again
+                </button>
+              </>
+            )}
           </p>
         </div>
       ) : (

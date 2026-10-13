@@ -140,6 +140,16 @@ def init_db():
         print(f"[db] could not create pgvector extension (may already exist): {e}")
     Base.metadata.create_all(bind=engine)
     _migrate_columns()
+    # One-time backfill: scans saved before created_at existed carry NULL
+    # timestamps, which hides them from cross-browser history. Affects
+    # rows only while any remain NULL — healthy boots touch nothing.
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text("UPDATE scans SET created_at = now() WHERE created_at IS NULL")
+            )
+    except Exception as e:
+        print(f"[db] created_at backfill skipped: {e}")
 
 
 def save_scan_results(scan_id: str, repo_url: str, findings_list: list, score: int, user_id: str = None):

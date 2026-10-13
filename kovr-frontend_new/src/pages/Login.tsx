@@ -1,10 +1,14 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, LogIn, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/primitives'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { useAuthStore } from '@/store/useAuthStore'
+
+// Remembered across visits (never the password — the browser's password
+// manager handles that via the autocomplete hints below).
+const LAST_EMAIL_KEY = 'kovr:lastEmail'
 
 export function Login() {
   const navigate = useNavigate()
@@ -13,15 +17,30 @@ export function Login() {
   const loading = useAuthStore((s) => s.loading)
   const error = useAuthStore((s) => s.error)
   const clearError = useAuthStore((s) => s.clearError)
+  const user = useAuthStore((s) => s.user)
 
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => {
+    try {
+      return localStorage.getItem(LAST_EMAIL_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+
+  // Already signed in — never show the login form again.
+  if (user) return <Navigate to="/connect" replace />
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     const ok = await login(email, password)
     if (ok) {
+      try {
+        localStorage.setItem(LAST_EMAIL_KEY, email.trim())
+      } catch {
+        /* storage unavailable — prefill is a nicety, not a requirement */
+      }
       const from = (location.state as { from?: string } | null)?.from
       navigate(from && from !== '/login' ? from : '/connect', { replace: true })
     }

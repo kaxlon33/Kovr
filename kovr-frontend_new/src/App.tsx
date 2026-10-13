@@ -65,10 +65,6 @@ function RequireAuth({ children }: { children: ReactNode }) {
           <div className="absolute inset-[42%] rounded-full bg-primary/80 shadow-[0_0_18px_3px_rgba(34,211,238,0.45)]" />
         </div>
         <p className="font-mono text-sm font-bold tracking-tight text-on-surface">KOVR</p>
-        <p className="mt-2 flex items-center gap-2 text-xs text-on-surface-variant">
-          <LoaderCircle size={12} className="animate-spin text-primary" aria-hidden />
-          Restoring session
-        </p>
       </div>
     )
   }

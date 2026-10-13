@@ -209,8 +209,19 @@ def forgot_password(
         try:
             send_temp_password_email(user.email, temp_password)
         except Exception as e:
-            print(f"[mail] failed to send recovery email to {email[:3]}***: {e}")
-            return {"error": "Could not send the email right now — please try again in a few minutes."}
+            import smtplib
+
+            print(f"[mail] failed to send recovery email to {email[:3]}***: {type(e).__name__}: {e}")
+            if isinstance(e, smtplib.SMTPAuthenticationError):
+                reason = "The email provider rejected the username/password — check SMTP_USER/SMTP_PASSWORD."
+            elif isinstance(e, (TimeoutError, ConnectionError, OSError)):
+                reason = (
+                    "The server cannot reach the email provider — SMTP ports are blocked "
+                    "on this host (Render free blocks 25/465/587). Use an email API (BREVO_API_KEY) instead."
+                )
+            else:
+                reason = f"{type(e).__name__}"
+            return {"error": f"Email delivery failed: {reason}"}
     # Identical response whether or not the account exists — never reveal it.
     return {"status": "sent"}
 

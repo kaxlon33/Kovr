@@ -73,8 +73,13 @@ def _send_via_smtp(to: str, subject: str, html: str, text: str) -> None:
     user = os.getenv("SMTP_USER")
     password = os.getenv("SMTP_PASSWORD")
 
-    with smtplib.SMTP(host, port, timeout=30) as server:
-        server.starttls()
+    if port == 465:
+        server = smtplib.SMTP_SSL(host, port, timeout=30)
+    else:
+        server = smtplib.SMTP(host, port, timeout=30)
+    with server:
+        if port != 465:
+            server.starttls()
         server.login(user, password)
         server.send_message(msg)
 

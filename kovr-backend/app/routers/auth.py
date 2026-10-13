@@ -7,6 +7,7 @@ JavaScript, sent on same-site navigation and top-level GETs, which is the
 right default for a same-site API consumed by the bundled frontend.
 """
 import os
+import secrets
 import uuid as uuid_lib
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -23,6 +24,7 @@ from app.core.auth import (
 )
 from app.core.database import SessionLocal, User
 from app.core.rate_limit import rate_limit
+from app.core.mailer import send_temp_password_email, smtp_configured
 
 router = APIRouter()
 
@@ -30,6 +32,7 @@ router = APIRouter()
 # registrations per hour per client IP.
 login_limiter = rate_limit("login", max_hits=10, window_seconds=60)
 register_limiter = rate_limit("register", max_hits=5, window_seconds=3600)
+forgot_limiter = rate_limit("forgot", max_hits=5, window_seconds=3600)
 
 cookie_auth = APIKeyCookie(name=COOKIE_NAME, auto_error=False)
 
@@ -44,6 +47,21 @@ class LoginRequest(BaseModel):
     # whatever the stored hash can verify, including legacy passwords.
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    temp_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 def get_db():
@@ -169,3 +187,53 @@ def logout(response: Response):
 @router.get("/api/auth/me")
 def me(current_user: User = Depends(get_current_user)):
     return {"user": _user_response(current_user)}
+
+
+@router.post("/api/auth/forgot-password")
+def forgot_password(
+    request: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+    _limited: None = Depends(forgot_limiter),
+):
+    if not smtp_configured():
+        return {
+            "error": "Email is not configured on this server — ask the administrator "
+            "to set the SMTP settings before using password reset."
+        }
+    email = request.email.lower().strip()
+    user = db.query(User).filter(User.email == email).first()
+    if user:
+        temp_password = secrets.token_urlsafe(9)
+        user.hashed_password = hash_password(temp_password)
+        db.commit()
+        try:
+            send_temp_password_email(user.email, temp_password)
+        except Exception as e:
+            print(f"[mail] failed to send recovery email to {email[:3]}***: {e}")
+            return {"error": "Could not send the email right now — please try again in a few minutes."}
+    # Identical response whether or not the account exists — never reveal it.
+    return {"status": "sent"}
+
+
+@router.post("/api/auth/reset-password")
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    email = request.email.lower().strip()
+    user = db.query(User).filter(User.email == email).first()
+    if not user or not verify_password(request.temp_password, user.hashed_password):
+        return {"error": "Temporary password is not valid for this email. Request a new one."}
+    user.hashed_password = hash_password(request.new_password)
+    db.commit()
+    return {"status": "changed"}
+
+
+@router.post("/api/auth/change-password")
+def change_password(
+    request: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(request.current_password, current_user.hashed_password):
+        return {"error": "Current password is incorrect."}
+    current_user.hashed_password = hash_password(request.new_password)
+    db.commit()
+    return {"status": "changed"}

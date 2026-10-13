@@ -128,6 +128,47 @@ export async function startScan(
   return res.json()
 }
 
+/* POST /api/auth/forgot-password — emails a temporary password */
+export async function forgotPassword(email: string): Promise<{ status?: string; error?: string }> {
+  const res = await fetch(`${getApiBase()}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+  return res.json()
+}
+
+/* POST /api/auth/reset-password — temp password + new password */
+export async function resetPassword(
+  email: string,
+  tempPassword: string,
+  newPassword: string,
+): Promise<{ status?: string; error?: string }> {
+  const res = await fetch(`${getApiBase()}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, temp_password: tempPassword, new_password: newPassword }),
+  })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+  return res.json()
+}
+
+/* POST /api/auth/change-password — authed, current + new */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ status?: string; error?: string }> {
+  const res = await fetch(`${getApiBase()}/api/auth/change-password`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+  return res.json()
+}
+
 /* GET /api/scans — the user's scan history from the server (follows the
    account across browsers). */
 export async function fetchHistory(): Promise<{

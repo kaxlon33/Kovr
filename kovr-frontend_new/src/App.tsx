@@ -8,6 +8,8 @@ import { Docs } from '@/pages/Docs'
 import { FindingDetail } from '@/pages/FindingDetail'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
+import { Forgot } from '@/pages/Forgot'
+import { Reset } from '@/pages/Reset'
 import { Report } from '@/pages/Report'
 import { ScanProgress } from '@/pages/ScanProgress'
 import { ScanSetup } from '@/pages/ScanSetup'
@@ -181,6 +183,8 @@ export default function App() {
       {/* Chromeless public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot" element={<Forgot />} />
+      <Route path="/reset" element={<Reset />} />
 
       <Route
         element={

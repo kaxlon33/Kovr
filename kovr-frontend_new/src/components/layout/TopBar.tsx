@@ -1,11 +1,23 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronDown, ChevronRight, CircleHelp, FolderOpen, LogOut, Menu, Search } from 'lucide-react'
-import { IconButton } from '@/components/ui/Button'
-import { KeyCap } from '@/components/ui/primitives'
+import {
+  ChevronDown,
+  ChevronRight,
+  CircleHelp,
+  FolderOpen,
+  KeyRound,
+  LoaderCircle,
+  LogOut,
+  Menu,
+  Search,
+} from 'lucide-react'
+import { Button, IconButton } from '@/components/ui/Button'
+import { Input, KeyCap } from '@/components/ui/primitives'
+import { Modal } from '@/components/ui/Modal'
 import { LogoutConfirmModal } from '@/components/layout/LogoutButton'
 import { useScanStore } from '@/store/useScanStore'
 import { useAuthStore, selectIsAdmin } from '@/store/useAuthStore'
+import { changePassword } from '@/api/client'
 import { repoLabel } from '@/lib/format'
 import { cn } from '@/lib/cn'
 
@@ -68,6 +80,48 @@ export function TopBar({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const isAdmin = useAuthStore(selectIsAdmin)
   const [menuOpen, setMenuOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [currentPw, setCurrentPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [pwError, setPwError] = useState('')
+  const [pwBusy, setPwBusy] = useState(false)
+  const pushToast = useScanStore((s) => s.pushToast)
+
+  const submitPasswordChange = async () => {
+    if (pwBusy) return
+    if (newPw !== confirmPw) {
+      setPwError('New password and confirmation do not match.')
+      return
+    }
+    setPwBusy(true)
+    setPwError('')
+    try {
+      const data = await changePassword(currentPw, newPw)
+      if (data.error) {
+        setPwError(data.error)
+      } else {
+        setChangingPassword(false)
+        setCurrentPw('')
+        setNewPw('')
+        setConfirmPw('')
+        try {
+          localStorage.removeItem('kovr:remembered')
+        } catch {
+          /* ignore */
+        }
+        pushToast({
+          title: 'Password changed',
+          body: 'Use your new password next time you sign in.',
+          tone: 'success',
+        })
+      }
+    } catch {
+      setPwError('Could not reach the server — try again.')
+    } finally {
+      setPwBusy(false)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between gap-4 border-b border-outline-variant bg-surface-container px-4 md:px-6">
@@ -204,6 +258,18 @@ export function TopBar({ onOpenMenu }: { onOpenMenu?: () => void }) {
                     role="menuitem"
                     onClick={() => {
                       setMenuOpen(false)
+                      setChangingPassword(true)
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                  >
+                    <KeyRound size={14} />
+                    Change password
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false)
                       setLoggingOut(true)
                     }}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error"
@@ -236,6 +302,89 @@ export function TopBar({ onOpenMenu }: { onOpenMenu?: () => void }) {
       </div>
 
       <LogoutConfirmModal open={loggingOut} onClose={() => setLoggingOut(false)} />
+
+      <Modal
+        open={changingPassword}
+        onClose={() => setChangingPassword(false)}
+        title="Change password"
+        variant="panel"
+        description="Choose a new password for your account."
+      >
+        <form
+          className="space-y-4 p-5"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void submitPasswordChange()
+          }}
+        >
+          {pwError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-on-error-container"
+            >
+              {pwError}
+            </p>
+          )}
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-on-surface-variant">Current password</span>
+            <Input
+              type="password"
+              value={currentPw}
+              onChange={(event) => {
+                setCurrentPw(event.target.value)
+                setPwError('')
+              }}
+              autoComplete="current-password"
+              required
+              autoFocus
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-on-surface-variant">New password</span>
+            <Input
+              type="password"
+              value={newPw}
+              onChange={(event) => {
+                setNewPw(event.target.value)
+                setPwError('')
+              }}
+              autoComplete="new-password"
+              required
+              minLength={8}
+              placeholder="At least 8 characters"
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium text-on-surface-variant">
+              Confirm new password
+            </span>
+            <Input
+              type="password"
+              value={confirmPw}
+              onChange={(event) => {
+                setConfirmPw(event.target.value)
+                setPwError('')
+              }}
+              autoComplete="new-password"
+              required
+              minLength={8}
+            />
+          </label>
+          <div className="flex justify-end gap-3 pt-1">
+            <Button variant="ghost" onClick={() => setChangingPassword(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={pwBusy || !currentPw || !newPw || !confirmPw}
+              icon={pwBusy ? <LoaderCircle size={15} className="animate-spin" /> : <KeyRound size={15} />}
+            >
+              {pwBusy ? 'Changing…' : 'Change password'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </header>
   )
 }

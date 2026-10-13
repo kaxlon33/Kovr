@@ -7,12 +7,14 @@ import {
   FolderOpen,
   KeyRound,
   LoaderCircle,
+  Lock,
   LogOut,
   Menu,
   Search,
 } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Input, KeyCap } from '@/components/ui/primitives'
+import { FormAlert } from '@/components/ui/FormAlert'
 import { Modal } from '@/components/ui/Modal'
 import { LogoutConfirmModal } from '@/components/layout/LogoutButton'
 import { useScanStore } from '@/store/useScanStore'
@@ -317,14 +319,7 @@ export function TopBar({ onOpenMenu }: { onOpenMenu?: () => void }) {
             void submitPasswordChange()
           }}
         >
-          {pwError && (
-            <p
-              role="alert"
-              className="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-on-error-container"
-            >
-              {pwError}
-            </p>
-          )}
+          {pwError && <FormAlert>{pwError}</FormAlert>}
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-on-surface-variant">Current password</span>
             <Input
@@ -337,6 +332,7 @@ export function TopBar({ onOpenMenu }: { onOpenMenu?: () => void }) {
               autoComplete="current-password"
               required
               autoFocus
+              icon={<Lock size={15} />}
             />
           </label>
           <label className="block space-y-1.5">
@@ -352,6 +348,7 @@ export function TopBar({ onOpenMenu }: { onOpenMenu?: () => void }) {
               required
               minLength={8}
               placeholder="At least 8 characters"
+              icon={<Lock size={15} />}
             />
           </label>
           <label className="block space-y-1.5">
@@ -368,6 +365,7 @@ export function TopBar({ onOpenMenu }: { onOpenMenu?: () => void }) {
               autoComplete="new-password"
               required
               minLength={8}
+              icon={<Lock size={15} />}
             />
           </label>
           <div className="flex justify-end gap-3 pt-1">

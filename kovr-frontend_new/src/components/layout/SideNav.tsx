@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { BookOpen, Cable, History, ListChecks, Radar, Settings as SettingsIcon, ShieldCheck } from 'lucide-react'
+import { BookOpen, Cable, History, ListChecks, Radar, Settings as SettingsIcon } from 'lucide-react'
+import { KovrMark } from '@/components/ui/KovrMark'
 import { cn } from '@/lib/cn'
 import { useScanStore, openFindings } from '@/store/useScanStore'
 
@@ -23,13 +24,7 @@ export function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="flex h-full w-64 flex-col border-r border-outline-variant bg-surface">
       <div className="flex items-center gap-3 border-b border-outline-variant px-6 py-6">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
-          <ShieldCheck size={19} className="text-primary" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="font-mono text-sm font-bold tracking-tight text-on-surface">KOVR</h1>
-          <p className="text-[10px] uppercase tracking-wider text-outline">AI security scanner</p>
-        </div>
+        <KovrMark />
       </div>
 
       <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">

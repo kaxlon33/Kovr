@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle2, Eye, EyeOff, Lock, Mail, UserPlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/primitives'
+import { FormAlert } from '@/components/ui/FormAlert'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { useAuthStore } from '@/store/useAuthStore'
 import { cn } from '@/lib/cn'
@@ -66,14 +67,7 @@ export function Register() {
       subtitle="Start scanning your repositories in minutes."
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        {shown && (
-          <p
-            role="alert"
-            className="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-on-error-container"
-          >
-            {shown}
-          </p>
-        )}
+        {shown && <FormAlert>{shown}</FormAlert>}
 
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-on-surface-variant">Email</span>

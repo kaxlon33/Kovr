@@ -52,17 +52,21 @@ services:
         sync: false  # Your Cloudflare Pages domain, e.g. https://kovr.pages.dev (comma-separated for extras)
       - key: HF_TOKEN
         sync: false  # Optional — faster embedding-model downloads on cold starts
-      # Outbound email (password reset). Gmail: enable 2FA, create an App
-      # Password at https://myaccount.google.com/apppasswords
+      # Outbound email (password reset). PREFERRED: Brevo API over HTTPS —
+      # Render free instances BLOCK outbound SMTP ports (25/465/587).
+      # Free Brevo account: https://app.brevo.com -> SMTP & API -> API keys.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false  # e.g. KOVR <you@gmail.com> — must be a Brevo-verified sender
+      # Legacy SMTP transport (works locally / on SMTP-friendly hosts)
       - key: SMTP_HOST
         sync: false  # e.g. smtp.gmail.com
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        sync: false  # your email address
+        sync: false
       - key: SMTP_PASSWORD
-        sync: false  # the app password (not your login password)
-      - key: MAIL_FROM
-        sync: false  # e.g. KOVR <you@gmail.com>
+        sync: false  # Gmail app password (2FA required)
     healthCheckPath: /api/health
     autoDeploy: true

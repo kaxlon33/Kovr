@@ -1,25 +1,66 @@
 """
-Outbound email via SMTP (env-configured). Used for account recovery.
+Outbound email. Two transports, chosen by environment:
 
-SMTP settings (e.g. Gmail app password, Brevo, Resend SMTP):
-    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, MAIL_FROM
+1. BREVO_API_KEY — email over HTTPS (https://api.brevo.com). This is the
+   right choice on hosts that block outbound SMTP (Render free instances
+   block ports 25/465/587). Free tier: 300 emails/day, no card.
+2. SMTP_HOST/USER/PASSWORD — classic SMTP (local dev, other hosts).
+
+MAIL_FROM shapes the visible sender, e.g. "KOVR <you@gmail.com>".
 """
 import os
 import smtplib
 from email.message import EmailMessage
 
 
-def smtp_configured() -> bool:
-    return bool(os.getenv("SMTP_HOST") and os.getenv("SMTP_USER") and os.getenv("SMTP_PASSWORD"))
-
-
 def _from_address() -> str:
     return os.getenv("MAIL_FROM") or f"KOVR <{os.getenv('SMTP_USER')}>"
 
 
-def send_email(to: str, subject: str, html: str, text: str = "") -> None:
-    """Send one email. Raises on failure so callers can surface an error
-    instead of silently dropping a recovery message."""
+def _parse_from(raw: str) -> tuple[str, str]:
+    """'KOVR <a@b.com>' -> ('KOVR', 'a@b.com')"""
+    raw = (raw or "").strip()
+    if "<" in raw and raw.endswith(">"):
+        name, addr = raw.rsplit("<", 1)
+        return name.strip().strip('"') or "KOVR", addr[:-1].strip()
+    return "KOVR", raw
+
+
+def mail_configured() -> bool:
+    if os.getenv("BREVO_API_KEY"):
+        return True
+    return bool(os.getenv("SMTP_HOST") and os.getenv("SMTP_USER") and os.getenv("SMTP_PASSWORD"))
+
+
+# Backwards-compatible alias for the router's existing check.
+smtp_configured = mail_configured
+
+
+def _send_via_brevo(to: str, subject: str, html: str, text: str) -> None:
+    import requests
+
+    name, addr = _parse_from(_from_address())
+    response = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={
+            "api-key": os.getenv("BREVO_API_KEY", ""),
+            "content-type": "application/json",
+            "accept": "application/json",
+        },
+        json={
+            "sender": {"name": name, "email": addr},
+            "to": [{"email": to}],
+            "subject": subject,
+            "htmlContent": html,
+            "textContent": text,
+        },
+        timeout=30,
+    )
+    # 2xx = accepted; anything else carries Brevo's reason in the body.
+    response.raise_for_status()
+
+
+def _send_via_smtp(to: str, subject: str, html: str, text: str) -> None:
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = _from_address()
@@ -36,6 +77,15 @@ def send_email(to: str, subject: str, html: str, text: str = "") -> None:
         server.starttls()
         server.login(user, password)
         server.send_message(msg)
+
+
+def send_email(to: str, subject: str, html: str, text: str = "") -> None:
+    """Send one email. Raises on failure so callers can surface an error
+    instead of silently dropping a recovery message."""
+    if os.getenv("BREVO_API_KEY"):
+        _send_via_brevo(to, subject, html, text)
+    else:
+        _send_via_smtp(to, subject, html, text)
 
 
 def send_temp_password_email(to: str, temp_password: str) -> None:

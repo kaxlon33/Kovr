@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { BadgeCheck, Radar, ShieldCheck, Wrench } from 'lucide-react'
+import { BadgeCheck, Radar, Wrench } from 'lucide-react'
+import { KovrMark } from '@/components/ui/KovrMark'
 
 const FEATURES = [
   {
@@ -55,16 +56,8 @@ export function AuthLayout({
       <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center justify-center gap-12 px-6 py-12 lg:flex-row lg:gap-20">
         {/* Branding — desktop only */}
         <div className="hidden flex-1 lg:block">
-          <div className="mb-6 flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
-              <ShieldCheck size={19} className="text-primary" />
-            </span>
-            <div>
-              <p className="font-mono text-sm font-bold tracking-tight text-on-surface">KOVR</p>
-              <p className="text-[10px] uppercase tracking-wider text-outline">
-                AI security scanner
-              </p>
-            </div>
+          <div className="mb-6">
+            <KovrMark />
           </div>
 
           <h1 className="mb-4 text-4xl font-semibold leading-tight tracking-tight text-on-surface">
@@ -102,16 +95,8 @@ export function AuthLayout({
               aria-hidden
             />
 
-            <div className="mb-6 flex items-center gap-3 lg:hidden">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
-                <ShieldCheck size={19} className="text-primary" />
-              </span>
-              <div>
-                <p className="font-mono text-sm font-bold tracking-tight text-on-surface">KOVR</p>
-                <p className="text-[10px] uppercase tracking-wider text-outline">
-                  AI security scanner
-                </p>
-              </div>
+            <div className="mb-6">
+              <KovrMark />
             </div>
 
             <h2 className="mb-1 text-xl font-semibold tracking-tight text-on-surface">{title}</h2>

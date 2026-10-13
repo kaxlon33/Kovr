@@ -7,11 +7,11 @@ import {
   GitBranch,
   LoaderCircle,
   Radar,
-  ShieldCheck,
   Wrench,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
+import { KovrMark } from '@/components/ui/KovrMark'
 import { LogoutButton } from '@/components/layout/LogoutButton'
 import { ScoreRing } from '@/components/viz/ScoreRing'
 import { useScanStore } from '@/store/useScanStore'
@@ -131,13 +131,7 @@ export function Connect() {
           identity and the only logout affordance on this screen. */}
       <header className="relative z-10 flex items-center justify-between gap-4 px-6 py-5 md:px-10">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
-            <ShieldCheck size={19} className="text-primary" />
-          </span>
-          <div>
-            <p className="font-mono text-sm font-bold tracking-tight text-on-surface">KOVR</p>
-            <p className="text-[10px] uppercase tracking-wider text-outline">AI security scanner</p>
-          </div>
+          <KovrMark />
         </div>
 
         {user && (

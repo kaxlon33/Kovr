@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, LogIn, Mail } from 'lucide-react'
+import { Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/primitives'
+import { FormAlert } from '@/components/ui/FormAlert'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { useAuthStore } from '@/store/useAuthStore'
 
@@ -82,14 +83,7 @@ export function Login() {
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to run and review security scans.">
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        {error && (
-          <p
-            role="alert"
-            className="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-on-error-container"
-          >
-            {error}
-          </p>
-        )}
+        {error && <FormAlert>{error}</FormAlert>}
 
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-on-surface-variant">Email</span>
@@ -122,6 +116,7 @@ export function Login() {
               required
               placeholder="Your password"
               className="pr-10"
+              icon={<Lock size={15} />}
             />
             <button
               type="button"

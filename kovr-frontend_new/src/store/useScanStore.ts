@@ -128,6 +128,9 @@ interface ScanState {
   cancelScan: () => Promise<void>
   /** Local-only reset for an orphaned scan (backend restarted mid-run). */
   resetScan: () => void
+  /** Pull the account's scan history from the server and merge it with the
+   * local list — history follows the account across browsers/devices. */
+  syncHistory: () => Promise<void>
 
   /** Investigate a finding; resolves true when the finding was codebase-wide
    * and got auto-split (the caller should leave the detail page). */
@@ -290,6 +293,38 @@ export const useScanStore = create<ScanState>()(
           scanPaused: false,
           cancellingScan: false,
         })
+      },
+
+      syncHistory: async () => {
+        try {
+          const data = await api.fetchHistory()
+          const rows = data?.scans ?? []
+          if (rows.length === 0) return
+          set((state) => {
+            const byId = new Map(state.history.map((entry) => [entry.scanId, entry]))
+            for (const row of rows) {
+              const existing = byId.get(row.scan_id)
+              // Server rows without a timestamp predate created_at — keep
+              // them only when a local entry already anchors their time.
+              const at = row.created_at ?? existing?.at
+              if (!at) continue
+              byId.set(row.scan_id, {
+                scanId: row.scan_id,
+                repoUrl: row.repo_url,
+                score: row.score ?? 0,
+                findingCount: row.finding_count ?? 0,
+                openCount: row.open_count ?? 0,
+                at,
+              })
+            }
+            const merged = Array.from(byId.values()).sort((a, b) =>
+              a.at < b.at ? 1 : a.at > b.at ? -1 : 0,
+            )
+            return { history: merged }
+          })
+        } catch {
+          // Offline or old backend — local history remains the source.
+        }
       },
 
       /**

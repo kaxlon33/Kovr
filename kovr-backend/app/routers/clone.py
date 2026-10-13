@@ -810,6 +810,49 @@ def start_full_scan(
     return {"scan_id": scan_id, "status": "started"}
 
 
+@router.get("/api/scans")
+def list_my_scans(current_user: User = Depends(get_current_user)):
+    """The user's scan history straight from the database — history follows
+    the ACCOUNT, not the browser. Finding counts stay live (resolved
+    findings shrink the open count)."""
+    session = SessionLocal()
+    try:
+        query = session.query(Scan)
+        if current_user.role != "admin":
+            query = query.filter(Scan.user_id == current_user.id)
+        scans = (
+            query.order_by(Scan.created_at.desc().nullslast(), Scan.id.desc())
+            .limit(50)
+            .all()
+        )
+        rows = []
+        for scan in scans:
+            counts = dict(
+                session.query(Finding.verified, func.count())
+                .filter(Finding.scan_id == scan.id)
+                .group_by(Finding.verified)
+                .all()
+            )
+            total = sum(n for v, n in counts.items() if v != "superseded")
+            open_count = sum(
+                n for v, n in counts.items() if v not in ("resolved", "superseded")
+            )
+            rows.append(
+                {
+                    "scan_id": scan.id,
+                    "repo_url": scan.repo_url,
+                    "score": scan.score or 0,
+                    "finding_count": total,
+                    "open_count": open_count,
+                    "created_at": scan.created_at.isoformat() if scan.created_at else None,
+                    "pr_url": scan.pr_url,
+                }
+            )
+        return {"scans": rows}
+    finally:
+        session.close()
+
+
 @router.post("/api/scan/{scan_id}/cancel")
 def cancel_scan(scan_id: str, current_user: User = Depends(get_current_user)):
     """Cooperative abort: the scan stops at the next safe point (between AI

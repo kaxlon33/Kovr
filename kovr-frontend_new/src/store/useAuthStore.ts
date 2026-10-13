@@ -34,6 +34,10 @@ async function adoptUser(user: User | null): Promise<void> {
     quotaNote: '',
     severityFilter: 'all',
   })
+  // History follows the ACCOUNT: pull the server-side list whenever
+  // identity is (re)established — another browser/device gets the same
+  // history immediately.
+  if (user) void useScanStore.getState().syncHistory()
 }
 
 /**

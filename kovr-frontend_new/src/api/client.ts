@@ -128,6 +128,24 @@ export async function startScan(
   return res.json()
 }
 
+/* GET /api/scans — the user's scan history from the server (follows the
+   account across browsers). */
+export async function fetchHistory(): Promise<{
+  scans: Array<{
+    scan_id: string
+    repo_url: string
+    score: number
+    finding_count: number
+    open_count: number
+    created_at: string | null
+    pr_url: string | null
+  }>
+}> {
+  const res = await fetch(`${getApiBase()}/api/scans`, { credentials: 'include' })
+  if (!res.ok) throw new Error(`History failed: ${res.status}`)
+  return res.json()
+}
+
 /* GET /api/scan/{scan_id}/stream  (Server-Sent Events) */
 export function openScanStream(scanId: string): EventSource {
   // withCredentials is required cross-origin, otherwise the auth cookie

@@ -65,6 +65,8 @@ class Scan(Base):
     # pull request once the user explicitly opens one.
     pr_branch = Column(String)
     pr_url = Column(String)
+    # When results were saved — powers cross-browser scan history.
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class Finding(Base):
@@ -143,7 +145,7 @@ def init_db():
 def save_scan_results(scan_id: str, repo_url: str, findings_list: list, score: int, user_id: str = None):
     session = SessionLocal()
 
-    scan = Scan(id=scan_id, repo_url=repo_url, score=score, user_id=user_id)
+    scan = Scan(id=scan_id, repo_url=repo_url, score=score, user_id=user_id, created_at=func.now())
     session.add(scan)
     session.flush()  # force scan to be inserted before findings reference it
 

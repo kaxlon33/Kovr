@@ -44,8 +44,31 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
   if (!authChecked) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
-        <p className="text-sm text-on-surface-variant">Restoring session…</p>
+      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background">
+        {/* Quiet backdrop matching the reconnect screen */}
+        <div className="bg-dot-grid pointer-events-none absolute inset-0 opacity-15" aria-hidden />
+        <div
+          className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full opacity-20 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #22d3ee 0%, transparent 70%)' }}
+          aria-hidden
+        />
+        {/* Mini radar */}
+        <div className="relative mb-6 h-16 w-16" aria-hidden>
+          <div className="absolute inset-0 rounded-full border border-outline-variant/70" />
+          <div className="absolute inset-3 rounded-full border border-outline-variant/50" />
+          <div
+            className="absolute inset-0 animate-spin rounded-full opacity-70 [animation-duration:5s]"
+            style={{
+              background: 'conic-gradient(from 0deg, rgba(34,211,238,0.55), transparent 90deg)',
+            }}
+          />
+          <div className="absolute inset-[42%] rounded-full bg-primary/80 shadow-[0_0_18px_3px_rgba(34,211,238,0.45)]" />
+        </div>
+        <p className="font-mono text-sm font-bold tracking-tight text-on-surface">KOVR</p>
+        <p className="mt-2 flex items-center gap-2 text-xs text-on-surface-variant">
+          <LoaderCircle size={12} className="animate-spin text-primary" aria-hidden />
+          Restoring session
+        </p>
       </div>
     )
   }

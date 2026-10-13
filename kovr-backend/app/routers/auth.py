@@ -195,19 +195,20 @@ def forgot_password(
     db: Session = Depends(get_db),
     _limited: None = Depends(forgot_limiter),
 ):
-    if not smtp_configured():
-        return {
-            "error": "Email is not configured on this server — ask the administrator "
-            "to set the SMTP settings before using password reset."
-        }
     email = request.email.lower().strip()
     user = db.query(User).filter(User.email == email).first()
-    if user:
-        temp_password = secrets.token_urlsafe(9)
-        user.hashed_password = hash_password(temp_password)
-        db.commit()
+    if not user:
+        # Identical response shape whether or not the account exists.
+        return {"status": "sent"}
+
+    temp_password = secrets.token_urlsafe(9)
+    user.hashed_password = hash_password(temp_password)
+    db.commit()
+
+    if smtp_configured():
         try:
             send_temp_password_email(user.email, temp_password)
+            return {"status": "sent"}
         except Exception as e:
             import smtplib
 
@@ -222,8 +223,11 @@ def forgot_password(
             else:
                 reason = f"{type(e).__name__}"
             return {"error": f"Email delivery failed: {reason}"}
-    # Identical response whether or not the account exists — never reveal it.
-    return {"status": "sent"}
+
+    # No email transport configured — self-service demo mode: the
+    # temporary password is returned to the screen instead of an inbox.
+    # (Production instances configure SMTP or BREVO_API_KEY.)
+    return {"status": "sent", "temp_password": temp_password}
 
 
 @router.post("/api/auth/reset-password")

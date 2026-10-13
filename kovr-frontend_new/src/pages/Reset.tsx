@@ -15,7 +15,9 @@ export function Reset() {
   const [email, setEmail] = useState(
     (location.state as { email?: string } | null)?.email ?? '',
   )
-  const [tempPassword, setTempPassword] = useState('')
+  const [tempPassword, setTempPassword] = useState(
+    (location.state as { tempPassword?: string } | null)?.tempPassword ?? '',
+  )
   const [newPassword, setNewPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')

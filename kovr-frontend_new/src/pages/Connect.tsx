@@ -3,16 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   BadgeCheck,
+  ChevronDown,
   Crosshair,
   GitBranch,
+  KeyRound,
   LoaderCircle,
+  LogOut,
   Radar,
   Wrench,
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button, IconButton } from '@/components/ui/Button'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
 import { KovrMark } from '@/components/ui/KovrMark'
-import { LogoutButton } from '@/components/layout/LogoutButton'
+import { ChangePasswordModal } from '@/components/layout/ChangePasswordModal'
+import { LogoutConfirmModal } from '@/components/layout/LogoutButton'
 import { ScoreRing } from '@/components/viz/ScoreRing'
 import { useScanStore } from '@/store/useScanStore'
 import { useAuthStore, selectIsAdmin } from '@/store/useAuthStore'
@@ -76,6 +80,9 @@ export function Connect() {
 
   const user = useAuthStore((s) => s.user)
   const isAdmin = useAuthStore(selectIsAdmin)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -155,10 +162,69 @@ export function Connect() {
               )}
             </span>
 
-            <LogoutButton variant="ghost" size="sm" />
+            <div className="relative">
+              {menuOpen && (
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} aria-hidden />
+              )}
+              <IconButton
+                label="Account menu"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                <ChevronDown
+                  size={15}
+                  className={cn('transition-transform', menuOpen && 'rotate-180')}
+                />
+              </IconButton>
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="animate-fade-up absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-outline-variant bg-surface-container shadow-2xl shadow-black/50"
+                >
+                  <div className="border-b border-outline-variant px-4 py-3">
+                    <p className="truncate text-sm font-medium text-on-surface" title={user.email}>
+                      {user.email}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-on-surface-variant">
+                      {isAdmin ? 'Administrator' : 'Signed in'}
+                    </p>
+                  </div>
+                  <div className="space-y-0.5 p-1.5">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false)
+                        setChangingPassword(true)
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                    >
+                      <KeyRound size={14} />
+                      Change password
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false)
+                        setLoggingOut(true)
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error"
+                    >
+                      <LogOut size={14} />
+                      Log out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </header>
+
+      <ChangePasswordModal open={changingPassword} onClose={() => setChangingPassword(false)} />
+      <LogoutConfirmModal open={loggingOut} onClose={() => setLoggingOut(false)} />
 
       <main className="animate-fade-up relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center gap-12 px-6 pb-16 pt-4">
         {/* Hero — radar + headline */}

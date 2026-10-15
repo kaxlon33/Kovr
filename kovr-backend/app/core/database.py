@@ -93,6 +93,10 @@ class Finding(Base):
     # regenerated during the retry loop (so it may differ from earlier).
     last_verify_reason = Column(Text, nullable=True)
     scope = Column(String, default="local")  # local / codebase_wide
+    # Evaluation instrumentation (research questions): how many attempts the
+    # fix loop used, and whether the FIRST attempt already verified.
+    fix_attempts = Column(Integer)
+    first_attempt_verified = Column(String)  # 'pass' / 'fail' / NULL (unverified)
     embedding = Column(Vector(384))
 
 
@@ -879,14 +883,24 @@ def expand_codebase_wide_finding(finding_id: str, with_fixes: bool = True):
 MAX_FIX_ATTEMPTS = 3
 
 
-def _record_verify_outcome(finding_id: str, reason: str | None):
+def _record_verify_outcome(
+    finding_id: str,
+    reason: str | None,
+    attempts: int | None = None,
+    first_attempt_pass: bool | None = None,
+):
     """Persist the last verification outcome on the finding so the UI can
     explain a failure long after the verify call returned. reason=None on
-    success clears any earlier failure note."""
+    success clears any earlier failure note. attempts/first_attempt_pass
+    feed the evaluation (RQ1: first-attempt vs. retry pass rate)."""
     session = SessionLocal()
     finding = session.query(Finding).filter(Finding.id == finding_id).first()
     if finding:
         finding.last_verify_reason = reason
+        if attempts is not None:
+            finding.fix_attempts = attempts
+        if first_attempt_pass is not None:
+            finding.first_attempt_verified = "pass" if first_attempt_pass else "fail"
         session.commit()
     session.close()
 
@@ -917,8 +931,7 @@ def verify_with_retry(finding_id: str, fixed_path: str, attempt: int = 1, _seen_
                 "The regenerated fix is identical to a previous failed attempt — "
                 "the AI could not improve on it. Manual review needed."
             )
-            _record_verify_outcome(finding_id, reason)
-            return {
+            _record_verify_outcome(finding_id, reason, attempts=attempt, first_attempt_pass=(attempt == 1))`n            return {
                 "finding_id": finding_id,
                 "verified": "failed",
                 "reason": reason,
@@ -932,14 +945,14 @@ def verify_with_retry(finding_id: str, fixed_path: str, attempt: int = 1, _seen_
 
     if result.get("verified") == "resolved":
         result["attempts"] = attempt
-        _record_verify_outcome(finding_id, None)
+        _record_verify_outcome(finding_id, None, attempts=attempt, first_attempt_pass=(attempt == 1))
         return result
 
     if attempt >= MAX_FIX_ATTEMPTS:
         result["attempts"] = attempt
         result["retries_exhausted"] = True
         result["needs_manual_context"] = True
-        _record_verify_outcome(finding_id, result.get("reason"))
+        _record_verify_outcome(finding_id, result.get("reason"), attempts=attempt, first_attempt_pass=(attempt == 1))
         result["note"] = (
             "The suggestion shown is the final attempt — the fix was regenerated automatically "
             "after each failed verification, so it may differ from the version you first saw."
@@ -951,7 +964,7 @@ def verify_with_retry(finding_id: str, fixed_path: str, attempt: int = 1, _seen_
         result["attempts"] = attempt
         result["retries_exhausted"] = True
         result["needs_manual_context"] = True
-        _record_verify_outcome(finding_id, new_investigation.get("error") or result.get("reason"))
+        _record_verify_outcome(finding_id, new_investigation.get("error") or result.get("reason"), attempts=attempt, first_attempt_pass=(attempt == 1))
         return result
 
     new_fixed_path, error = apply_fix_for_finding(finding_id)
@@ -959,7 +972,7 @@ def verify_with_retry(finding_id: str, fixed_path: str, attempt: int = 1, _seen_
         result["attempts"] = attempt
         result["retries_exhausted"] = True
         result["needs_manual_context"] = True
-        _record_verify_outcome(finding_id, error or result.get("reason"))
+        _record_verify_outcome(finding_id, error or result.get("reason"), attempts=attempt, first_attempt_pass=(attempt == 1))
         return result
 
     return verify_with_retry(finding_id, new_fixed_path, attempt + 1, _seen_patches=_seen_patches)

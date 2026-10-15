@@ -32,9 +32,14 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://kovr_user:kovr_pass@local
 # search_path includes Supabase's `extensions` schema, where its pgvector
 # type actually lives — without it, CREATE TABLE fails with
 # 'type "vector" does not exist' even though the extension is installed.
+# connect_timeout: a paused/unreachable database fails fast instead of
+# hanging every startup until the host's port scan gives up.
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"options": "-csearch_path=public,extensions"},
+    connect_args={
+        "options": "-csearch_path=public,extensions",
+        "connect_timeout": 10,
+    },
 )
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
@@ -931,7 +936,8 @@ def verify_with_retry(finding_id: str, fixed_path: str, attempt: int = 1, _seen_
                 "The regenerated fix is identical to a previous failed attempt — "
                 "the AI could not improve on it. Manual review needed."
             )
-            _record_verify_outcome(finding_id, reason, attempts=attempt, first_attempt_pass=(attempt == 1))`n            return {
+            _record_verify_outcome(finding_id, reason, attempts=attempt, first_attempt_pass=(attempt == 1))
+            return {
                 "finding_id": finding_id,
                 "verified": "failed",
                 "reason": reason,

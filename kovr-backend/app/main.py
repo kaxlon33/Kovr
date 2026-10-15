@@ -9,18 +9,28 @@ app = FastAPI()
 
 @app.on_event("startup")
 def prepare_database():
-    # Create missing tables AND reconcile columns the models gained since
-    # the database was first created (create_all alone never alters
-    # existing tables — that gap once left users.github_access_token
-    # missing and every login returning 500).
-    init_db()
-    print("[db] schema reconciled")
+    # The port must open IMMEDIATELY — a paused or slow database must never
+    # block the web server from serving (a hanging startup once wedged the
+    # whole deploy until the host's port scan timed out). Schema init and
+    # scan-resume run in a background thread; DB-dependent endpoints simply
+    # error until it completes.
+    import threading
 
-    # Scans that were running when the process last died resume here —
-    # only their unfinished pillars re-run; the rest close out cleanly.
-    from app.routers.clone import resume_interrupted_scans
+    def _init():
+        # Create missing tables AND reconcile columns the models gained since
+        # the database was first created (create_all alone never alters
+        # existing tables — that gap once left users.github_access_token
+        # missing and every login returning 500).
+        init_db()
+        print("[db] schema reconciled")
 
-    resume_interrupted_scans()
+        # Scans that were running when the process last died resume here —
+        # only their unfinished pillars re-run; the rest close out cleanly.
+        from app.routers.clone import resume_interrupted_scans
+
+        resume_interrupted_scans()
+
+    threading.Thread(target=_init, name="db-init", daemon=True).start()
 
 default_origins = ["http://localhost:5173", "http://localhost:5180"]
 env_origins = os.getenv("CORS_ORIGINS")

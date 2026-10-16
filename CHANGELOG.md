@@ -2,6 +2,24 @@
 
 All notable changes to KOVR are documented here.
 
+## Unreleased
+
+### Evaluation
+- Findings now persist fix-loop instrumentation: `fix_attempts` and
+  `first_attempt_verified` (first-attempt vs. retry pass rates — RQ1)
+- New `scripts/evaluate.py`: generates the research results report
+  (RQ1 fix correctness, failure classes, RQ2 gate-vs-verifier split,
+  RQ3 scan consistency) directly from the database
+
+### Reliability
+- Database connects with a 10-second timeout — a paused/unreachable
+  database fails fast instead of hanging startup
+- Schema init and scan-resume moved to a background thread: the web port
+  opens immediately and a database outage can no longer wedge a deploy
+
+### Operations
+- Uptime monitoring on `/api/health` (external, multi-region, email alerts)
+
 ## v0.1.0 — 2026-10-15
 
 First tagged release: AI security scanner with verified fixes and pull-request delivery.
